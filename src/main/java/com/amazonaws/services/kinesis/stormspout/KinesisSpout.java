@@ -15,27 +15,26 @@
 
 package com.amazonaws.services.kinesis.stormspout;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.storm.Config;
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.IRichSpout;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.kinesis.stormspout.state.IKinesisSpoutStateManager;
 import com.amazonaws.services.kinesis.stormspout.state.zookeeper.ZookeeperStateManager;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.storm.Config;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.IRichSpout;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Storm spout for Amazon Kinesis. The spout fetches data from Kinesis and emits a tuple for each data record.
@@ -186,6 +185,7 @@ public class KinesisSpout implements IRichSpout, Serializable {
                             + currentShardId + ".");
                 }
 
+                tuple.add(0, String.format("%s:%s", this.config.getRegion().getName(), currentShardId));
                 collector.emit(tuple, MessageIdUtil.constructMessageId(currentShardId, recordToEmit.getSequenceNumber()));
                 stateManager.emit(currentShardId, recordToEmit, isRetry);
             } else {
@@ -251,7 +251,9 @@ public class KinesisSpout implements IRichSpout, Serializable {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(config.getScheme().getOutputFields());
+        List<String> fields = config.getScheme().getOutputFields().toList();
+        fields.add(0, "shardId");
+        declarer.declare(new Fields(fields));
     }
 
     @Override
