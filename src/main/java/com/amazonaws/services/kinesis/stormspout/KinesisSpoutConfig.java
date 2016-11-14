@@ -37,7 +37,8 @@ public class KinesisSpoutConfig implements Serializable {
 
     private final String zookeeperConnectionString;
     private String zookeeperPrefix = "kinesis_storm_spout";
-    private int zookeeperSessionTimeoutMillis = 10000;
+    private int zookeeperSessionTimeoutMillis = 200;
+    private int zookeeperMaxRetry = 5;
 
     private IKinesisRecordScheme scheme = new DefaultKinesisRecordScheme();
 
@@ -153,6 +154,23 @@ public class KinesisSpoutConfig implements Serializable {
     public KinesisSpoutConfig withZookeeperSessionTimeoutMillis(int zookeeperSessionTimeoutMillis) {
         checkValueIsPositive(zookeeperSessionTimeoutMillis, "zookeeperSessionTimeoutMillis");
         this.zookeeperSessionTimeoutMillis = zookeeperSessionTimeoutMillis;
+        return this;
+    }
+
+    /**
+     * @return Zookeeper session timeout.
+     */
+    public int getZookeeperMaxRetry() {
+        return zookeeperMaxRetry;
+    }
+
+    /**
+     * @param zookeeperMaxRetry Zookeeper session timeout
+     * @return KinesisSpoutConfig
+     */
+    public KinesisSpoutConfig withZookeeperMaxRetry(int zookeeperMaxRetry) {
+        checkValueIsPositive(zookeeperMaxRetry, "zookeeperMaxRetry");
+        this.zookeeperMaxRetry = zookeeperMaxRetry;
         return this;
     }
 

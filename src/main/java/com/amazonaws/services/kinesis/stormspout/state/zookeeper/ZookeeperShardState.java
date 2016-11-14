@@ -15,7 +15,6 @@
 
 package com.amazonaws.services.kinesis.stormspout.state.zookeeper;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
@@ -32,10 +31,10 @@ import com.amazonaws.services.kinesis.stormspout.state.zookeeper.NodeFunction.Mo
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import com.netflix.curator.RetryLoop;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.RetryLoop;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 
 /**
  * Handles communication with Zookeeper and methods specific to the spout for saving/restoring
@@ -43,9 +42,7 @@ import com.netflix.curator.retry.ExponentialBackoffRetry;
  */
 class ZookeeperShardState {
     private static final Logger LOG = LoggerFactory.getLogger(ZookeeperShardState.class);
-    private static final int BASE_SLEEP_TIME_MS = 200;
     private static final int BASE_OPTIMISTIC_RETRY_TIME_MS = 100;
-    private static final int MAX_NUM_RETRIES = 5;
     private static final String SHARD_LIST_SUFFIX = "shardList";
     private static final String STATE_SUFFIX = "state";
 
@@ -63,7 +60,9 @@ class ZookeeperShardState {
 
         try {
             zk = CuratorFrameworkFactory.newClient(config.getZookeeperConnectionString(),
-                    new ExponentialBackoffRetry(BASE_SLEEP_TIME_MS, MAX_NUM_RETRIES));
+                    new ExponentialBackoffRetry(
+                            config.getZookeeperSessionTimeoutMillis(),
+                            config.getZookeeperMaxRetry()));
             zk.start();
         } catch (Exception e) {
             LOG.error("Could not connect to ZooKeeper", e);
