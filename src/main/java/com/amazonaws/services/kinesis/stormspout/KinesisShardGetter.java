@@ -15,30 +15,19 @@
 
 package com.amazonaws.services.kinesis.stormspout;
 
-import java.util.concurrent.Callable;
-
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.services.kinesis.AmazonKinesisClient;
+import com.amazonaws.services.kinesis.model.*;
+import com.amazonaws.services.kinesis.stormspout.exceptions.InvalidSeekPositionException;
+import com.amazonaws.services.kinesis.stormspout.exceptions.KinesisSpoutException;
+import com.amazonaws.services.kinesis.stormspout.utils.InfiniteConstantBackoffRetry;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
-import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
-import com.amazonaws.services.kinesis.model.GetRecordsRequest;
-import com.amazonaws.services.kinesis.model.GetRecordsResult;
-import com.amazonaws.services.kinesis.model.GetShardIteratorRequest;
-import com.amazonaws.services.kinesis.model.GetShardIteratorResult;
-import com.amazonaws.services.kinesis.model.InvalidArgumentException;
-import com.amazonaws.services.kinesis.model.ProvisionedThroughputExceededException;
-import com.amazonaws.services.kinesis.model.Record;
-import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
-import com.amazonaws.services.kinesis.stormspout.exceptions.InvalidSeekPositionException;
-import com.amazonaws.services.kinesis.stormspout.exceptions.KinesisSpoutException;
-import com.amazonaws.services.kinesis.stormspout.utils.InfiniteConstantBackoffRetry;
-import com.google.common.collect.ImmutableList;
+import java.util.concurrent.Callable;
 
 /**
  * Fetches data from a Kinesis shard.
@@ -56,8 +45,8 @@ class KinesisShardGetter implements IShardGetter {
     private ShardPosition positionInShard;
 
     /**
-     * @param streamName Name of the Kinesis stream
-     * @param shardId Fetch data from this shard
+     * @param streamName    Name of the Kinesis stream
+     * @param shardId       Fetch data from this shard
      * @param kinesisClient Kinesis client to use when making requests.
      */
     KinesisShardGetter(final String streamName, final String shardId, final AmazonKinesisClient kinesisClient) {
@@ -70,14 +59,14 @@ class KinesisShardGetter implements IShardGetter {
 
     @Override
     public Records getNext(int maxNumberOfRecords)
-        throws AmazonClientException, ResourceNotFoundException, InvalidArgumentException {
+            throws AmazonClientException, ResourceNotFoundException, InvalidArgumentException {
         if (shardIterator == null) {
             LOG.debug(this + " Null shardIterator for " + shardId + ". This can happen if shard is closed.");
             return Records.empty(true);
         }
 
         final ImmutableList.Builder<Record> records = new ImmutableList.Builder<>();
-        
+
         try {
             final GetRecordsRequest request = new GetRecordsRequest();
             request.setShardIterator(shardIterator);
@@ -93,7 +82,9 @@ class KinesisShardGetter implements IShardGetter {
                         + maxNumberOfRecords + ").");
             }
 
-            shardIterator = result.getNextShardIterator();            
+            shardIterator = result.getNextShardIterator();
+        } catch (ProvisionedThroughputExceededException ex) {
+            LOG.warn(this + "Kinesis rate exceeded when fetching records for " + shardId + ex.toString());
         } catch (AmazonClientException e) {
             // We'll treat this equivalent to fetching 0 records - the spout drives the retry as part of nextTuple()
             // We don't sleep here - we can continue processing ack/fail on the spout thread.
@@ -105,7 +96,7 @@ class KinesisShardGetter implements IShardGetter {
 
     @Override
     public void seek(ShardPosition position)
-        throws AmazonClientException, ResourceNotFoundException, InvalidSeekPositionException {
+            throws AmazonClientException, ResourceNotFoundException, InvalidSeekPositionException {
         LOG.info("Seeking to " + position);
 
         ShardIteratorType iteratorType;
@@ -154,7 +145,7 @@ class KinesisShardGetter implements IShardGetter {
     }
 
     private String seek(final ShardIteratorType iteratorType, final String seqNum)
-        throws AmazonClientException, ResourceNotFoundException, InvalidArgumentException {
+            throws AmazonClientException, ResourceNotFoundException, InvalidArgumentException {
         final GetShardIteratorRequest request = new GetShardIteratorRequest();
 
         request.setStreamName(streamName);
@@ -178,7 +169,7 @@ class KinesisShardGetter implements IShardGetter {
     }
 
     private GetRecordsResult safeGetRecords(final GetRecordsRequest request)
-        throws AmazonClientException, ResourceNotFoundException, InvalidArgumentException {
+            throws AmazonClientException, ResourceNotFoundException, InvalidArgumentException {
         while (true) {
             try {
                 return kinesisClient.getRecords(request);
