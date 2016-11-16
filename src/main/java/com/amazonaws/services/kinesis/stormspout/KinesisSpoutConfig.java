@@ -186,7 +186,6 @@ public class KinesisSpoutConfig implements Serializable {
      * @return KinesisSpoutConfig
      */
     public KinesisSpoutConfig withCheckpointIntervalMillis(int checkpointIntervalMillis) {
-        checkValueIsPositive(checkpointIntervalMillis, "checkpointIntervalMillis");
         this.checkpointIntervalMillis = checkpointIntervalMillis;
         return this;
     }
