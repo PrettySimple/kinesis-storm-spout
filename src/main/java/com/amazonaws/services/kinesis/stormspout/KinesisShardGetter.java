@@ -16,7 +16,7 @@
 package com.amazonaws.services.kinesis.stormspout;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
+import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.services.kinesis.stormspout.exceptions.InvalidSeekPositionException;
 import com.amazonaws.services.kinesis.stormspout.exceptions.KinesisSpoutException;
@@ -39,7 +39,7 @@ class KinesisShardGetter implements IShardGetter {
 
     private final String streamName;
     private final String shardId;
-    private final AmazonKinesisClient kinesisClient;
+    private final AmazonKinesis kinesisClient;
 
     private String shardIterator;
     private ShardPosition positionInShard;
@@ -49,7 +49,7 @@ class KinesisShardGetter implements IShardGetter {
      * @param shardId       Fetch data from this shard
      * @param kinesisClient Kinesis client to use when making requests.
      */
-    KinesisShardGetter(final String streamName, final String shardId, final AmazonKinesisClient kinesisClient) {
+    KinesisShardGetter(final String streamName, final String shardId, final AmazonKinesis kinesisClient) {
         this.streamName = streamName;
         this.shardId = shardId;
         this.kinesisClient = kinesisClient;

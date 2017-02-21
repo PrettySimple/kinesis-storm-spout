@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'project-report'
 
 group = 'com.amazonaws'
 version = '1.2'
@@ -11,11 +12,20 @@ repositories {
     maven { url "http://repo.maven.apache.org/maven2" }
 }
 dependencies {
+    // AWS sdk depends on an old version of jackson-databind but maxmind geoip depends on a recent version
+    // and jackson-databind does not support multiple version mix
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: rootProject.jackson
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-cbor', version: rootProject.jackson
+    
+    // Zookeeper
+    compile(group: 'org.apache.zookeeper', name: 'zookeeper', version: rootProject.zookeeperVersion)
+    
     // Storm
     compile group: 'org.apache.storm', name: 'storm-core', version: rootProject.stormVersion
+
     // AWS SDK
-    compile group: 'com.amazonaws', name: 'aws-java-sdk', version: rootProject.AWSSdkVersion
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-kinesis', version: rootProject.AWSSdkVersion
 
     compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.5'
-    compile group: 'org.apache.curator', name: 'curator-framework', version:'2.11.0'
+    compile group: 'org.apache.curator', name: 'curator-framework', version:'2.11.1'
 }

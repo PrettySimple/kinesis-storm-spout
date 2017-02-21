@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +29,6 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.Shard;
@@ -55,7 +54,7 @@ class KinesisHelper implements IShardListGetter {
 
     private transient AWSCredentialsProvider kinesisCredsProvider;
     private transient ClientConfiguration kinesisClientConfig;
-    private transient AmazonKinesisClient kinesisClient;
+    private transient AmazonKinesis kinesisClient;
     private transient Region region;
 
     /**
@@ -119,14 +118,17 @@ class KinesisHelper implements IShardListGetter {
      * @return new instance of AmazonKinesisClient, with parameters supplied by whatever was passed
      *         to the KinesisHelper constructor.
      */
-    private AmazonKinesisClient makeNewKinesisClient() {
-        AmazonKinesisClient client = new AmazonKinesisClient(getKinesisCredsProvider(), getClientConfiguration());
+    private AmazonKinesis makeNewKinesisClient() {
+        AmazonKinesis client = AmazonKinesisClientBuilder.standard()
+                .withCredentials(getKinesisCredsProvider())
+                .withClientConfiguration(getClientConfiguration())
+                .withRegion(getRegion().getName())
+                .build();
         LOG.info("Using " + getRegion().getName() + " region");
-        client.setRegion(getRegion());       
         return client;
     }
 
-    AmazonKinesisClient getSharedkinesisClient() {
+    AmazonKinesis getSharedkinesisClient() {
         if (kinesisClient == null) {
             kinesisClient = makeNewKinesisClient();
         }
@@ -146,10 +148,10 @@ class KinesisHelper implements IShardListGetter {
             kinesisClientConfig =
                     (ClientConfiguration) SerializationHelper.kryoDeserializeObject(serializedkinesisClientConfig);
         }
-        String userAgent = kinesisClientConfig.getUserAgent();
+        String userAgent = kinesisClientConfig.getUserAgentPrefix();
         if (!userAgent.contains(KINESIS_STORM_SPOUT_USER_AGENT)) {
             userAgent += ", " + KINESIS_STORM_SPOUT_USER_AGENT;
-            kinesisClientConfig.setUserAgent(userAgent);
+            kinesisClientConfig.setUserAgentPrefix(userAgent);
         }
         return kinesisClientConfig;
     }
