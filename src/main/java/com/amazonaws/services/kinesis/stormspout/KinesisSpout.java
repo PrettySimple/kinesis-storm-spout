@@ -99,6 +99,11 @@ public class KinesisSpout implements IRichSpout, Serializable {
         this.initialPosition = config.getInitialPositionInStream();
     }
 
+    /* read number of shard */
+    public int getShardNb() {
+        return shardListGetter.getShardNb();
+    }
+
     @Override
     public void open(@SuppressWarnings("rawtypes") final Map conf,
             final TopologyContext spoutContext,

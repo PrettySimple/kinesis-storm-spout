@@ -78,6 +78,11 @@ class KinesisHelper implements IShardListGetter {
     }
 
     @Override
+    public int getShardNb() {
+        return getSharedkinesisClient().describeStream(streamName).getStreamDescription().getShards().size();
+    }
+
+    @Override
     public ImmutableSortedMap<String, ShardInfo> getShardList() {
         Map<String, ShardInfo> spoutShards = new HashMap<>();
 

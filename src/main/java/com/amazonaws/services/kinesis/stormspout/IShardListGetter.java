@@ -30,4 +30,6 @@ public interface IShardListGetter extends Serializable {
      * @return a map of shardId to ShardInfo.
      */
     ImmutableSortedMap<String, ShardInfo> getShardList();
+
+    int getShardNb();
 }
